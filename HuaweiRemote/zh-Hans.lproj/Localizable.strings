@@ -1,0 +1,13 @@
+/* 
+  Localizable.strings
+  HuaweiRemote
+
+  Created by jia xiaodong on 7/16/20.
+  Copyright © 2020 homemade. All rights reserved.
+ 
+  Note: Localizable.strings is the default filename iOS uses for localized text.
+  Resist the urge to name the file something else unless you want to type the
+  name of your .strings file every time you reference a localized string.
+*/
+"Set-top Box Remote" = "机顶盒遥控";
+"OK" = "确定";

@@ -1,0 +1,11 @@
+/* 
+  InfoPlist.strings
+  HuaweiRemote
+
+  Created by jia xiaodong on 7/16/20.
+  Copyright © 2020 homemade. All rights reserved.
+*/
+
+//! Localized App name under Icon on HOME screen
+// The only way to test the effect is to change the language settings in simulator.
+CFBundleDisplayName = "华为盒子遥控";
