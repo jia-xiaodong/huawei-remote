@@ -241,28 +241,31 @@ class ViewController: UIViewController {
 		*      }
 		*   }
 		*/
-		dispatch_async(dispatch_get_main_queue(), { [weak self]() -> Void in
-			let url = NSURL(string: "http://\(self!.mBoxIPAddress):7766/remote?key=\(code.rawValue)")
-			let task = self!.mURLSession.dataTaskWithURL(url!,
-				completionHandler: {[weak self](data:NSData?, response:NSURLResponse?, error:NSError?) in
-					if error == nil {
-						return
-					}
-					
-					// display localized message-box to user
-					let strTitle = NSLocalizedString("Set-top Box Remote", comment: "app full name")
-					let alert = UIAlertController(title: strTitle,
-						message: error!.localizedDescription,
-						preferredStyle:.Alert)
-					let strOk = NSLocalizedString("OK", comment: "OK")
-					alert.addAction(UIAlertAction(title: strOk, style: .Default, handler: nil))
-					self!.presentViewController(alert, animated: true, completion:nil)
-					
-					// in the meantime make the iPhone vibrate
-					AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
-			})
-			task.resume()
+		let url = NSURL(string: "http://\(mBoxIPAddress):7766/remote?key=\(code.rawValue)")
+		let task = mURLSession.dataTaskWithURL(url!, completionHandler: {
+			(data:NSData?, response:NSURLResponse?, error:NSError?) in
+			if error == nil {
+				return
+			}
+			
+			/*
+				Display localized message-box to user in main thread (Thread 1).
+				If not in main thread, it will damage the Auto Layout engine and may crash.
+			*/
+			dispatch_async(dispatch_get_main_queue(), { [weak self]() -> Void in
+				let strTitle = NSLocalizedString("Set-top Box Remote", comment: "app full name")
+				let alert = UIAlertController(title: strTitle,
+					message: error!.localizedDescription,
+					preferredStyle:.Alert)
+				let strOk = NSLocalizedString("OK", comment: "OK")
+				alert.addAction(UIAlertAction(title: strOk, style: .Default, handler: nil))
+				self!.presentViewController(alert, animated: true, completion:nil)
+				
+				// in the meantime make the iPhone vibrate
+				AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
+				})
 		})
+		task.resume()
 	}
 	
 	//! monitor device's network traffic path

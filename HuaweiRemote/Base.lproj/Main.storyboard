@@ -2,6 +2,8 @@
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="10116" systemVersion="15C50" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="BYZ-38-t0r">
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
+        <capability name="Constraints with non-1.0 multipliers" minToolsVersion="5.1"/>
     </dependencies>
     <scenes>
         <!--View Controller-->
@@ -16,20 +18,9 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="T9q-If-bgr" userLabel="Power">
-                                <rect key="frame" x="0.0" y="20" width="100" height="100"/>
-                                <size key="titleShadowOffset" width="1" height="1"/>
-                                <state key="normal" title="Button" image="ButtonPower"/>
-                                <variation key="widthClass=compact" fixedFrame="YES">
-                                    <rect key="frame" x="30" y="20" width="100" height="100"/>
-                                </variation>
-                                <connections>
-                                    <action selector="powerClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="elw-L5-ZWR"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="85w-g9-Umg" userLabel="Home">
-                                <rect key="frame" x="108" y="20" width="100" height="100"/>
-                                <state key="normal" title="Button" image="ButtonHome"/>
+                            <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="85w-g9-Umg" userLabel="Home">
+                                <rect key="frame" x="100" y="20" width="100" height="100"/>
+                                <state key="normal" backgroundImage="ButtonHome"/>
                                 <variation key="widthClass=compact" fixedFrame="YES">
                                     <rect key="frame" x="150" y="20" width="100" height="100"/>
                                 </variation>
@@ -37,36 +28,73 @@
                                     <action selector="homeClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Tuw-B8-3r0"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="g1u-9F-xAf" userLabel="Menu">
-                                <rect key="frame" x="219" y="20" width="100" height="100"/>
-                                <state key="normal" title="Button" image="ButtonMenu"/>
+                            <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="g1u-9F-xAf" userLabel="Menu">
+                                <rect key="frame" x="200" y="20" width="100" height="100"/>
+                                <state key="normal" backgroundImage="ButtonMenu"/>
                                 <connections>
                                     <action selector="menuClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="D4f-yu-NdL"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oHR-Kz-9Kw" userLabel="Back">
-                                <rect key="frame" x="108" y="128" width="100" height="100"/>
-                                <state key="normal" title="Button" image="ButtonBack"/>
+                            <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="oHR-Kz-9Kw" userLabel="Back">
+                                <rect key="frame" x="100" y="120" width="100" height="100"/>
+                                <state key="normal" backgroundImage="ButtonBack"/>
                                 <connections>
                                     <action selector="backClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="hE8-QB-o5f"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Ajv-Hm-ZS1" userLabel="VolDown">
-                                <rect key="frame" x="0.0" y="128" width="100" height="100"/>
-                                <state key="normal" title="Button" image="ButtonVolDown"/>
+                            <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ajv-Hm-ZS1" userLabel="VolDown">
+                                <rect key="frame" x="0.0" y="120" width="100" height="100"/>
+                                <state key="normal" backgroundImage="ButtonVolDown"/>
                                 <connections>
                                     <action selector="volDownClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ziF-cJ-1sj"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="7HJ-CQ-Xfu" userLabel="VolUp">
-                                <rect key="frame" x="219" y="128" width="100" height="100"/>
-                                <state key="normal" title="Button" image="ButtonVolUp"/>
+                            <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7HJ-CQ-Xfu" userLabel="VolUp">
+                                <rect key="frame" x="200" y="120" width="100" height="100"/>
+                                <state key="normal" backgroundImage="ButtonVolUp"/>
                                 <connections>
                                     <action selector="volUpClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="QOh-5S-2nL"/>
                                 </connections>
                             </button>
+                            <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="T9q-If-bgr" userLabel="Power">
+                                <rect key="frame" x="0.0" y="20" width="100" height="100"/>
+                                <size key="titleShadowOffset" width="1" height="1"/>
+                                <state key="normal" title="" backgroundImage="ButtonPower"/>
+                                <variation key="widthClass=compact" fixedFrame="YES">
+                                    <rect key="frame" x="30" y="20" width="100" height="100"/>
+                                </variation>
+                                <connections>
+                                    <action selector="powerClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="elw-L5-ZWR"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="7HJ-CQ-Xfu" firstAttribute="top" secondItem="g1u-9F-xAf" secondAttribute="bottom" id="0Hu-Ik-YOC"/>
+                            <constraint firstItem="oHR-Kz-9Kw" firstAttribute="trailing" secondItem="85w-g9-Umg" secondAttribute="trailing" id="5wc-eE-4h8"/>
+                            <constraint firstItem="oHR-Kz-9Kw" firstAttribute="leading" secondItem="Ajv-Hm-ZS1" secondAttribute="trailing" id="6ou-8t-4iz"/>
+                            <constraint firstItem="85w-g9-Umg" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="8Fb-Au-0Uw"/>
+                            <constraint firstItem="85w-g9-Umg" firstAttribute="bottom" secondItem="T9q-If-bgr" secondAttribute="bottom" id="93B-lQ-gWE"/>
+                            <constraint firstItem="7HJ-CQ-Xfu" firstAttribute="leading" secondItem="oHR-Kz-9Kw" secondAttribute="trailing" id="N32-6n-LeF"/>
+                            <constraint firstItem="85w-g9-Umg" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="P9a-5p-ivr"/>
+                            <constraint firstItem="7HJ-CQ-Xfu" firstAttribute="bottom" secondItem="Ajv-Hm-ZS1" secondAttribute="bottom" id="PUF-NF-MHt"/>
+                            <constraint firstItem="85w-g9-Umg" firstAttribute="height" secondItem="8bC-Xf-vdC" secondAttribute="height" multiplier="1:8" id="RgC-SD-fbY"/>
+                            <constraint firstItem="T9q-If-bgr" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="SnW-tq-1q5"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="7HJ-CQ-Xfu" secondAttribute="trailing" id="Svg-xb-BfF"/>
+                            <constraint firstItem="85w-g9-Umg" firstAttribute="width" secondItem="8bC-Xf-vdC" secondAttribute="width" multiplier="1:3" id="T31-Qv-vNA"/>
+                            <constraint firstItem="oHR-Kz-9Kw" firstAttribute="bottom" secondItem="Ajv-Hm-ZS1" secondAttribute="bottom" id="VzK-cw-Dlw"/>
+                            <constraint firstItem="oHR-Kz-9Kw" firstAttribute="leading" secondItem="85w-g9-Umg" secondAttribute="leading" id="hq0-qa-t5E"/>
+                            <constraint firstItem="g1u-9F-xAf" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="jLF-Nv-Ive"/>
+                            <constraint firstItem="g1u-9F-xAf" firstAttribute="bottom" secondItem="85w-g9-Umg" secondAttribute="bottom" id="lyn-uk-grV"/>
+                            <constraint firstItem="85w-g9-Umg" firstAttribute="leading" secondItem="T9q-If-bgr" secondAttribute="trailing" id="mzb-ce-CwT"/>
+                            <constraint firstItem="Ajv-Hm-ZS1" firstAttribute="top" secondItem="T9q-If-bgr" secondAttribute="bottom" id="oOn-eE-0UH"/>
+                            <constraint firstItem="oHR-Kz-9Kw" firstAttribute="height" secondItem="85w-g9-Umg" secondAttribute="height" id="ogF-PD-XJr"/>
+                            <constraint firstItem="Ajv-Hm-ZS1" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="t8Q-UB-4Yf"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="g1u-9F-xAf" secondAttribute="trailing" id="uVo-fy-hKc"/>
+                            <constraint firstItem="oHR-Kz-9Kw" firstAttribute="top" secondItem="85w-g9-Umg" secondAttribute="bottom" id="v3k-Fk-w1j"/>
+                            <constraint firstItem="g1u-9F-xAf" firstAttribute="leading" secondItem="85w-g9-Umg" secondAttribute="trailing" id="wr3-fB-bTB"/>
+                            <constraint firstItem="T9q-If-bgr" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="zIr-Xb-0dQ"/>
+                        </constraints>
                     </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -75,11 +103,11 @@
         </scene>
     </scenes>
     <resources>
-        <image name="ButtonBack" width="200" height="200"/>
-        <image name="ButtonHome" width="200" height="200"/>
-        <image name="ButtonMenu" width="200" height="200"/>
-        <image name="ButtonPower" width="200" height="200"/>
-        <image name="ButtonVolDown" width="200" height="200"/>
-        <image name="ButtonVolUp" width="200" height="200"/>
+        <image name="ButtonBack" width="100" height="100"/>
+        <image name="ButtonHome" width="100" height="100"/>
+        <image name="ButtonMenu" width="100" height="100"/>
+        <image name="ButtonPower" width="100" height="100"/>
+        <image name="ButtonVolDown" width="100" height="100"/>
+        <image name="ButtonVolUp" width="100" height="100"/>
     </resources>
 </document>
