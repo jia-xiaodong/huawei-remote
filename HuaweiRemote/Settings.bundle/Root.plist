@@ -78,6 +78,16 @@
 				<integer>3</integer>
 			</array>
 		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Disable Error Message</string>
+			<key>Key</key>
+			<string>disable_error_message</string>
+			<key>DefaultValue</key>
+			<false/>
+		</dict>
 	</array>
 </dict>
 </plist>

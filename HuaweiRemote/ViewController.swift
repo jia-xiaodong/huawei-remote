@@ -140,11 +140,13 @@ class ViewController: UIViewController {
 	let KEY_TODAY_DETAILS	= "detailed_forecast";
 	let KEY_ALARM_INFO		= "alarm_info";		// reserved
 	let KEY_LOCATION		= "location_setting";
+	let KEY_DISABLE_ERR_MSG	= "disable_error_message"
 	
 	//! detect Wifi network status
 	var mNetworkStatus: NetworkStatus
 	private var mReachabilityPtr: SCNetworkReachability?
 	var mURLSession: NSURLSession!  // FIXME: what a "!" is used for?
+	private var mIgnoreNetError: Bool = false
 	
 	//! gesture area
 	private var mGestureRectTop: CGFloat	// Y-coordinate
@@ -222,10 +224,6 @@ class ViewController: UIViewController {
 	//! all commands of Huawei remote control are executed (sent) here!
 	func performAction(code: ActionCode)
 	{
-		if code == .ACTION_NULL {
-			return
-		}
-		
 		// remote control must work under same local Wifi network to the Huawei set-top box.
 		if mNetworkStatus != .NETWORK_THRU_WIFI {
 			return
@@ -248,9 +246,15 @@ class ViewController: UIViewController {
 				return
 			}
 			
+			if self.mIgnoreNetError {
+				return
+			}
+			
 			/*
 				Display localized message-box to user in main thread (Thread 1).
 				If not in main thread, it will damage the Auto Layout engine and may crash.
+				Note: completion handler runs in sub-thread!
+				So we need dispatch Alert Message Box to main thread.
 			*/
 			dispatch_async(dispatch_get_main_queue(), { [weak self]() -> Void in
 				let strTitle = NSLocalizedString("Set-top Box Remote", comment: "app full name")
@@ -369,6 +373,9 @@ class ViewController: UIViewController {
 		mIsShowingTodayDetails = config.boolForKey(KEY_TODAY_DETAILS)
 		let locationNumber = config.integerForKey(KEY_LOCATION)
 		mGeoLocation = LocationID(rawValue: locationNumber)!
+		
+		//! You can suppress all network error message if you have faith in your Wifi.
+		mIgnoreNetError = config.boolForKey(KEY_DISABLE_ERR_MSG)
 	}
 	
 	func handleTap(gesture: UITapGestureRecognizer) {
@@ -431,8 +438,11 @@ class ViewController: UIViewController {
 				//! Firstly, respond to user's input
 				performAction(mCurrDirection.toActionCode())
 			
-				//! Secondly, begin to monitor user's long press
-				//! If user keeps initial direction for more than 0.5 second, accelerate that input
+				/*
+				Secondly, begin to monitor user's long press.
+				If user keeps initial direction for more than 0.5 second, accelerate that input.
+				If user releases finger within 0.5 second, below resetPanTimer will invalidate timer.
+				*/
 				resetPanTimer()
 				mRepeatDelayer = NSTimer.scheduledTimerWithTimeInterval(0.5,
 																		target: self,
@@ -468,11 +478,14 @@ class ViewController: UIViewController {
 	}
 	
 	func handleLongPress(timer: NSTimer) {
-		performAction(mCurrDirection.toActionCode())
+		let code = mCurrDirection.toActionCode()
+		if code != .ACTION_NULL {
+			performAction(code)
+		}
 	}
 	
 	//! FIXME: below func actually has no chance to be called.
-	func releaseBeforeDestroyed() {
+	func releaseBeforeExit() {
 		mURLSession.invalidateAndCancel()
 		stopMonitorNetwork()
 
