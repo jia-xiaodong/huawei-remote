@@ -61,6 +61,16 @@
                                     <action selector="powerClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="elw-L5-ZWR"/>
                                 </connections>
                             </button>
+                            <button opaque="NO" tag="1" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Qhx-C9-Ioa" userLabel="Weather">
+                                <rect key="frame" x="200" y="550" width="175" height="30"/>
+                                <color key="backgroundColor" red="0.93725490199999995" green="0.93725490199999995" blue="0.95686274510000002" alpha="1" colorSpace="calibratedRGB"/>
+                                <fontDescription key="fontDescription" name="HelveticaNeue" family="Helvetica Neue" pointSize="15"/>
+                                <inset key="contentEdgeInsets" minX="30" minY="10" maxX="30" maxY="10"/>
+                                <state key="normal" title="Button"/>
+                                <connections>
+                                    <action selector="weatherClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="lt4-Fa-ZNc"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                         <constraints>
@@ -77,12 +87,14 @@
                             <constraint firstAttribute="trailingMargin" secondItem="7HJ-CQ-Xfu" secondAttribute="trailing" id="Svg-xb-BfF"/>
                             <constraint firstItem="85w-g9-Umg" firstAttribute="width" secondItem="8bC-Xf-vdC" secondAttribute="width" multiplier="1:3" id="T31-Qv-vNA"/>
                             <constraint firstItem="oHR-Kz-9Kw" firstAttribute="bottom" secondItem="Ajv-Hm-ZS1" secondAttribute="bottom" id="VzK-cw-Dlw"/>
+                            <constraint firstItem="Qhx-C9-Ioa" firstAttribute="bottom" secondItem="wfy-db-euE" secondAttribute="top" id="cVc-l3-V66"/>
                             <constraint firstItem="oHR-Kz-9Kw" firstAttribute="leading" secondItem="85w-g9-Umg" secondAttribute="leading" id="hq0-qa-t5E"/>
                             <constraint firstItem="g1u-9F-xAf" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="jLF-Nv-Ive"/>
                             <constraint firstItem="g1u-9F-xAf" firstAttribute="bottom" secondItem="85w-g9-Umg" secondAttribute="bottom" id="lyn-uk-grV"/>
                             <constraint firstItem="85w-g9-Umg" firstAttribute="leading" secondItem="T9q-If-bgr" secondAttribute="trailing" id="mzb-ce-CwT"/>
                             <constraint firstItem="Ajv-Hm-ZS1" firstAttribute="top" secondItem="T9q-If-bgr" secondAttribute="bottom" id="oOn-eE-0UH"/>
                             <constraint firstItem="oHR-Kz-9Kw" firstAttribute="height" secondItem="85w-g9-Umg" secondAttribute="height" id="ogF-PD-XJr"/>
+                            <constraint firstItem="Qhx-C9-Ioa" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="szN-gC-gY7"/>
                             <constraint firstItem="Ajv-Hm-ZS1" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="t8Q-UB-4Yf"/>
                             <constraint firstAttribute="trailingMargin" secondItem="g1u-9F-xAf" secondAttribute="trailing" id="uVo-fy-hKc"/>
                             <constraint firstItem="oHR-Kz-9Kw" firstAttribute="top" secondItem="85w-g9-Umg" secondAttribute="bottom" id="v3k-Fk-w1j"/>
@@ -90,6 +102,9 @@
                             <constraint firstItem="T9q-If-bgr" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="zIr-Xb-0dQ"/>
                         </constraints>
                     </view>
+                    <connections>
+                        <outlet property="mWeatherButton" destination="Qhx-C9-Ioa" id="YB4-yg-YH5"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>

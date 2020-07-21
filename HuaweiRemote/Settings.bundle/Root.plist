@@ -42,7 +42,7 @@
 			<key>Key</key>
 			<string>forecast_info</string>
 			<key>DefaultValue</key>
-			<true/>
+			<false/>
 		</dict>
 		<dict>
 			<key>Type</key>

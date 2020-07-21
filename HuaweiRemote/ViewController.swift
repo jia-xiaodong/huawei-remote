@@ -123,13 +123,6 @@ class ViewController: UIViewController {
 	var mIsDoubleTapOK: Bool
 	var mTapGesture: UITapGestureRecognizer
 	
-	var mIsShowingForecastInfo: Bool
-	var mIsShowingTodayDetails: Bool
-	var mGeoLocation: LocationID
-	
-	//! weather info
-	// TODO:
-	
 	var mAqiReady, mDetailReady: Bool
 	
 	//! User Settings
@@ -141,6 +134,11 @@ class ViewController: UIViewController {
 	let KEY_ALARM_INFO		= "alarm_info";		// reserved
 	let KEY_LOCATION		= "location_setting";
 	let KEY_DISABLE_ERR_MSG	= "disable_error_message"
+	var mConfigNeedReload	= false
+	var ConfigNeedReload: Bool {
+		get { return mConfigNeedReload }
+		set { mConfigNeedReload = newValue }
+	}
 	
 	//! detect Wifi network status
 	var mNetworkStatus: NetworkStatus
@@ -151,6 +149,13 @@ class ViewController: UIViewController {
 	//! gesture area
 	private var mGestureRectTop: CGFloat	// Y-coordinate
 	
+	//! UI
+	@IBOutlet weak var mWeatherButton: UIButton!
+	var mLblWeatherInfo: UILabel?	// all info is placed here
+	var mScrollView: UIScrollView?	// text's too long, so need a scroll-effect
+	
+	var mWeatherSource: WeatherFullReport?
+	
 	// FIXME: why is it required? What is NSCoder?
 	required init?(coder aDecoder: NSCoder) {
 		mBoxIPAddress = DEFAULT_IP_ADDRESS
@@ -160,9 +165,6 @@ class ViewController: UIViewController {
 		mActionRepeater = nil
 		mIsDoubleTapOK = false
 		mTapGesture = UITapGestureRecognizer()
-		mIsShowingForecastInfo = false
-		mIsShowingTodayDetails = false
-		mGeoLocation = LocationID.Beijing_GuoFengMeiLun
 		mNetworkStatus = NetworkStatus.NETWORK_THRU_WIFI
 		mAqiReady = false
 		mDetailReady = false
@@ -181,6 +183,10 @@ class ViewController: UIViewController {
 
 	override func viewDidLoad() {
 		super.viewDidLoad()
+		
+		// Localized button title
+		let strTitle = NSLocalizedString("View Weather", comment: "request weather info")
+		mWeatherButton.setTitle(strTitle, forState: .Normal)
 		
 		loadUserConfig()
 		
@@ -221,6 +227,69 @@ class ViewController: UIViewController {
 		performAction(ActionCode.ACTION_BACK)
 	}
 	
+	@IBAction func weatherClicked(sender: UIButton) {
+		if mWeatherSource == nil {
+			// UI
+			let title = NSLocalizedString("Close", comment: "stop request")
+			mWeatherButton.setTitle(title, forState: .Normal)
+			createScrollLable()
+			
+			// create a new weather service provider everytime of querying.
+			mWeatherSource = WeatherFullReport()
+			
+			// check weather settings
+			mWeatherSource?.ItemOther.options = []  // clear all bits
+			mWeatherSource?.ItemOther.options.insert(WeatherOption.WEATHER_NOW)
+			let config = NSUserDefaults.standardUserDefaults()
+			let showForecastInfo = config.boolForKey(KEY_FORECAST_INFO)
+			if showForecastInfo {
+				mWeatherSource?.ItemOther.options.insert(WeatherOption.WEATHER_FORECAST)
+			}
+			let showTodayDetails = config.boolForKey(KEY_TODAY_DETAILS)
+			if showTodayDetails {
+				mWeatherSource?.ItemOther.options.insert(WeatherOption.WEATHER_DETAIL_FORECAST)
+			}
+			let locationNumber = config.integerForKey(KEY_LOCATION)
+			let locationID = LocationID(rawValue: locationNumber)!
+			
+			let setLabelText: (String)->Void = {(text) in
+				if let label = self.mLblWeatherInfo {
+					label.text = text
+					label.sizeToFit()					// resize UILabel to fit content (height)
+					if let parent = self.mScrollView {	// make whole area scrollable
+						parent.contentSize = label.frame.size
+					}
+				}
+			}
+			
+			mWeatherSource?.query(locationID,
+				AqiCompletionHandler: {(aqi) in
+					var report = ""
+					if let weather = self.mLblWeatherInfo?.text {
+						report = weather
+					}
+					setLabelText("\(aqi)\(report)")
+				},
+				WeatherCompletionHandler: {(forecast) in
+					var report = ""
+					if let aqi = self.mLblWeatherInfo?.text {
+						report = aqi
+					}
+					setLabelText("\(report)\(forecast)")
+				}
+			) // end query
+		} else {
+			mScrollView?.resignFirstResponder()
+			mScrollView?.removeFromSuperview()
+			mLblWeatherInfo?.removeFromSuperview()
+			mScrollView = nil
+			mLblWeatherInfo = nil
+			mWeatherSource = nil
+			let title = NSLocalizedString("View Weather", comment: "request weather info")
+			mWeatherButton.setTitle(title, forState: .Normal)
+		}
+	}
+	
 	//! all commands of Huawei remote control are executed (sent) here!
 	func performAction(code: ActionCode)
 	{
@@ -240,8 +309,7 @@ class ViewController: UIViewController {
 		*   }
 		*/
 		let url = NSURL(string: "http://\(mBoxIPAddress):7766/remote?key=\(code.rawValue)")
-		let task = mURLSession.dataTaskWithURL(url!, completionHandler: {
-			(data:NSData?, response:NSURLResponse?, error:NSError?) in
+		let task = mURLSession.dataTaskWithURL(url!) {(data, response, error) in
 			if error == nil {
 				return
 			}
@@ -256,7 +324,7 @@ class ViewController: UIViewController {
 				Note: completion handler runs in sub-thread!
 				So we need dispatch Alert Message Box to main thread.
 			*/
-			dispatch_async(dispatch_get_main_queue(), { [weak self]() -> Void in
+			dispatch_async(dispatch_get_main_queue(), {[weak self]() -> Void in
 				let strTitle = NSLocalizedString("Set-top Box Remote", comment: "app full name")
 				let alert = UIAlertController(title: strTitle,
 					message: error!.localizedDescription,
@@ -267,8 +335,8 @@ class ViewController: UIViewController {
 				
 				// in the meantime make the iPhone vibrate
 				AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
-				})
-		})
+			})
+		}
 		task.resume()
 	}
 	
@@ -368,17 +436,16 @@ class ViewController: UIViewController {
 			self.view.addGestureRecognizer(mTapGesture)
 		}
 		
-		//! [3] weather info
-		mIsShowingForecastInfo = config.boolForKey(KEY_FORECAST_INFO)
-		mIsShowingTodayDetails = config.boolForKey(KEY_TODAY_DETAILS)
-		let locationNumber = config.integerForKey(KEY_LOCATION)
-		mGeoLocation = LocationID(rawValue: locationNumber)!
-		
 		//! You can suppress all network error message if you have faith in your Wifi.
 		mIgnoreNetError = config.boolForKey(KEY_DISABLE_ERR_MSG)
 	}
 	
 	func handleTap(gesture: UITapGestureRecognizer) {
+		// disble tap when viewing weather info
+		guard mScrollView == nil else {
+			return
+		}
+		
 		let pt = gesture.locationInView(self.view)
 		if (pt.y > mGestureRectTop)
 		{
@@ -392,7 +459,9 @@ class ViewController: UIViewController {
 	func detectGestureArea() {
 		var positions = [CGFloat]()
 		for i in self.view.subviews where i is UIButton {
-			positions.append(i.frame.maxY)
+			if i.tag == 0 {
+				positions.append(i.frame.maxY)
+			}
 		}
 		mGestureRectTop = positions.maxElement()!
 	}
@@ -410,6 +479,11 @@ class ViewController: UIViewController {
 	//! control volume
 	// FIXME: how to debug this "pinch" behavior in simulator?
 	func handlePinch(gesture: UIPinchGestureRecognizer) {
+		// disble pinch when viewing weather info
+		if mScrollView != nil {
+			return
+		}
+		
 		if gesture.state == .Ended {
 			performAction(gesture.scale > 1.0 ? .ACTION_VOL_UP : .ACTION_VOL_DOWN)
 		}
@@ -417,6 +491,11 @@ class ViewController: UIViewController {
 	
 	//! process pan gestures of UP, DOWN, LEFT and RIGHT.
 	func handlePan(gesture: UIPanGestureRecognizer) {
+		// disble pan when viewing weather info
+		guard mScrollView == nil else {
+			return
+		}
+		
 		if gesture.state == .Began {
 			mCurrDirection = .DIRECTION_INVALID
 			mPrevDirection = .DIRECTION_INVALID
@@ -497,5 +576,25 @@ class ViewController: UIViewController {
 		}
 		*/
 	}
+	
+	func createScrollLable()
+	{
+		let rect = self.view.frame  // .frame vs. .bounds (global vs. local)
+		let padding: CGFloat = 5
+		let x: CGFloat = padding, y: CGFloat = padding + mGestureRectTop
+		let w = rect.width - 2 * padding
+		let h = rect.height - y - mWeatherButton.frame.height - padding
+		mScrollView = UIScrollView(frame: CGRect(x: x, y: y, width: w, height: h))
+		//mScrollView?.backgroundColor = UIColor.blueColor() // debug
+		//let font = UIFont.systemFontOfSize(14)
+		mLblWeatherInfo = UILabel(frame: CGRect(x: 0, y: 0, width: w, height: h))
+		//mLblWeatherInfo?.font = font
+		mLblWeatherInfo?.textAlignment = .Left
+		mLblWeatherInfo?.lineBreakMode = .ByWordWrapping
+		mLblWeatherInfo?.numberOfLines = 0
+		//mLblWeatherInfo?.backgroundColor = UIColor.blueColor() // debug
+		//mScrollView?.contentSize = (mLblWeatherInfo?.frame.size)!
+		mScrollView?.addSubview(mLblWeatherInfo!)
+		self.view.addSubview(mScrollView!)
+	}
 }
-
