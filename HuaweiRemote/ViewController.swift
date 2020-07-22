@@ -585,16 +585,26 @@ class ViewController: UIViewController {
 		let w = rect.width - 2 * padding
 		let h = rect.height - y - mWeatherButton.frame.height - padding
 		mScrollView = UIScrollView(frame: CGRect(x: x, y: y, width: w, height: h))
-		//mScrollView?.backgroundColor = UIColor.blueColor() // debug
-		//let font = UIFont.systemFontOfSize(14)
+		//mScrollView!.backgroundColor = UIColor.blueColor() // [debug] make it standing out
 		mLblWeatherInfo = UILabel(frame: CGRect(x: 0, y: 0, width: w, height: h))
-		//mLblWeatherInfo?.font = font
-		mLblWeatherInfo?.textAlignment = .Left
-		mLblWeatherInfo?.lineBreakMode = .ByWordWrapping
-		mLblWeatherInfo?.numberOfLines = 0
-		//mLblWeatherInfo?.backgroundColor = UIColor.blueColor() // debug
-		//mScrollView?.contentSize = (mLblWeatherInfo?.frame.size)!
-		mScrollView?.addSubview(mLblWeatherInfo!)
+		mScrollView!.addSubview(mLblWeatherInfo!)
 		self.view.addSubview(mScrollView!)
+		
+		if let label = mLblWeatherInfo {
+			//label.font = UIFont.systemFontOfSize(14)
+			label.textAlignment = .Left
+			label.lineBreakMode = .ByWordWrapping
+			label.numberOfLines = 0
+			//label.backgroundColor = UIColor.blueColor() // [debug] make it standing out
+			label.translatesAutoresizingMaskIntoConstraints = false
+			NSLayoutConstraint.activateConstraints([
+				label.widthAnchor.constraintEqualToConstant(mScrollView!.frame.size.width),
+				/*label.heightAnchor.constraintEqualToConstant(mScrollView!.frame.size.height),*/// label height must fit to content
+				label.centerXAnchor.constraintEqualToAnchor(mScrollView!.centerXAnchor),
+				label.topAnchor.constraintEqualToAnchor(mScrollView!.topAnchor)
+			])
+		}
+		mLblWeatherInfo?.translatesAutoresizingMaskIntoConstraints = false
+		
 	}
 }

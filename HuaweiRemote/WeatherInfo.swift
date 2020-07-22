@@ -51,10 +51,7 @@ class AirQualityIndex: WeatherServiceProvider
 		mResult = ""
 		let positionId = AirQualityIndex.StringFromId(location)
 		let url = NSURL(string: "https://api.waqi.info/api/feed/@\(positionId)/now.json")
-		// FIXME: if timeout isn't what I expected, use my own session instance
 		let session = NSURLSession.sharedSession()
-		let timeout = session.configuration.timeoutIntervalForResource
-		debugPrint(timeout)
 		let task = session.dataTaskWithURL(url!) {(data, response, error) in
 			var errorMessage: String? = nil
 			if let error = error {
@@ -392,13 +389,12 @@ class HeWeather: DetailedWeatherInfo
 			// [debug] can't see full values of a JSON object in Xcode debugger.
 			/*
 			if let jsonStr = NSString(bytes: response.bytes,
-			                      length: response.length,
-			                      encoding: NSUTF8StringEncoding)
+									  length: response.length,
+									  encoding: NSUTF8StringEncoding)
 			{
 				debugPrint(jsonStr)
 			}
 			*/
-			
 			let info = try NSJSONSerialization.JSONObjectWithData(response, options: .MutableLeaves)
 			guard let array = info.objectForKey("HeWeather5") else {
 				return
