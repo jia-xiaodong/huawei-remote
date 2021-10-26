@@ -20,14 +20,14 @@ enum NetworkStatus: Int
 }
 
 //! Swift obj reference --> Unmanaged C Pointer
-func bridge<T : AnyObject>(obj : T) -> UnsafePointer<Void> {
-	return UnsafePointer(Unmanaged.passUnretained(obj).toOpaque())
+func bridge<T : AnyObject>(obj : T) -> UnsafeRawPointer {
+	return UnsafeRawPointer(Unmanaged.passUnretained(obj).toOpaque())
 	// return unsafeAddressOf(obj) // ***
 }
 
 //! Unmanaged C Pointer --> Swift obj reference
-func bridge<T : AnyObject>(ptr : UnsafePointer<Void>) -> T {
-	return Unmanaged<T>.fromOpaque(COpaquePointer(ptr)).takeUnretainedValue()
+func bridge<T : AnyObject>(ptr : UnsafeRawPointer) -> T {
+	return Unmanaged<T>.fromOpaque(ptr).takeUnretainedValue()
 	// return unsafeBitCast(ptr, T.self) // ***
 }
 
@@ -43,14 +43,14 @@ func isValidIPv4Address(addr: String) -> Bool {
 		"([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
 		"([01]?\\d\\d?|2[0-4]\\d|25[0-5])$"
 	let predicate = NSPredicate(format:"SELF MATCHES %@", regex)
-	return predicate.evaluateWithObject(addr)
+    return predicate.evaluate(with:addr)
 }
 
 //! callback which can receive device's event of network status changing
-func ReachabilityCallback(target: SCNetworkReachability, flags: SCNetworkReachabilityFlags, info: UnsafeMutablePointer<Void>)
+func ReachabilityCallback(target: SCNetworkReachability, flags: SCNetworkReachabilityFlags, info: UnsafeMutableRawPointer?)
 {
-	let checker: ViewController = bridge(info);
-	checker.parseReachabilityFlags(flags);
+    let checker: ViewController = bridge(ptr:info!);
+    checker.parseReachabilityFlags(flags:flags);
 }
 
 class ViewController: UIViewController {
@@ -117,7 +117,7 @@ class ViewController: UIViewController {
 	}
 	
 	//! process long-press gesture when finger panning
-	var mRepeatDelayer, mActionRepeater: NSTimer?
+	var mRepeatDelayer, mActionRepeater: Timer?
 	
 	//! Single-tap or Double-tap OK
 	var mIsDoubleTapOK: Bool
@@ -143,7 +143,7 @@ class ViewController: UIViewController {
 	//! detect Wifi network status
 	var mNetworkStatus: NetworkStatus
 	private var mReachabilityPtr: SCNetworkReachability?
-	var mURLSession: NSURLSession!  // FIXME: what a "!" is used for?
+	var mURLSession: URLSession!  // FIXME: what a "!" is used for?
 	private var mIgnoreNetError: Bool = false
 	
 	//! gesture area
@@ -170,9 +170,9 @@ class ViewController: UIViewController {
 		mDetailReady = false
 		mGestureRectTop = CGFloat(0)
 		
-		let config = NSURLSessionConfiguration.defaultSessionConfiguration()
+		let config = URLSessionConfiguration.default
 		config.timeoutIntervalForRequest = 1.0
-		mURLSession = NSURLSession(configuration: config,
+		mURLSession = URLSession(configuration: config,
 		                           delegate: nil,		// we don't need delegate to monitor task status,
 		                           delegateQueue: nil)	// so ignore this queue, too.
 		
@@ -186,7 +186,7 @@ class ViewController: UIViewController {
 		
 		// Localized button title
 		let strTitle = NSLocalizedString("View Weather", comment: "request weather info")
-		mWeatherButton.setTitle(strTitle, forState: .Normal)
+		mWeatherButton.setTitle(strTitle, for: .normal)
 		
 		loadUserConfig()
 		
@@ -204,34 +204,34 @@ class ViewController: UIViewController {
 	}
 
 	@IBAction func powerClicked(sender: UIButton) {
-		performAction(ActionCode.ACTION_POWER)
+		performAction(code:ActionCode.ACTION_POWER)
 	}
 	
 	@IBAction func homeClicked(sender: UIButton) {
-		performAction(ActionCode.ACTION_HOME)
+		performAction(code:ActionCode.ACTION_HOME)
 	}
 	
 	@IBAction func menuClicked(sender: UIButton) {
-		performAction(ActionCode.ACTION_MENU)
+		performAction(code:ActionCode.ACTION_MENU)
 	}
 	
 	@IBAction func volDownClicked(sender: UIButton) {
-		performAction(ActionCode.ACTION_VOL_DOWN)
+		performAction(code:ActionCode.ACTION_VOL_DOWN)
 	}
 	
 	@IBAction func volUpClicked(sender: UIButton) {
-		performAction(ActionCode.ACTION_VOL_UP)
+		performAction(code:ActionCode.ACTION_VOL_UP)
 	}
 	
 	@IBAction func backClicked(sender: UIButton) {
-		performAction(ActionCode.ACTION_BACK)
+		performAction(code:ActionCode.ACTION_BACK)
 	}
 	
 	@IBAction func weatherClicked(sender: UIButton) {
 		if mWeatherSource == nil {
 			// UI
 			let title = NSLocalizedString("Close", comment: "stop request")
-			mWeatherButton.setTitle(title, forState: .Normal)
+			mWeatherButton.setTitle(title, for: .normal)
 			createScrollLable()
 			
 			// create a new weather service provider everytime of querying.
@@ -240,16 +240,16 @@ class ViewController: UIViewController {
 			// check weather settings
 			mWeatherSource?.ItemOther.options = []  // clear all bits
 			mWeatherSource?.ItemOther.options.insert(WeatherOption.WEATHER_NOW)
-			let config = NSUserDefaults.standardUserDefaults()
-			let showForecastInfo = config.boolForKey(KEY_FORECAST_INFO)
+            let config = UserDefaults.standard
+			let showForecastInfo = config.bool(forKey:KEY_FORECAST_INFO)
 			if showForecastInfo {
 				mWeatherSource?.ItemOther.options.insert(WeatherOption.WEATHER_FORECAST)
 			}
-			let showTodayDetails = config.boolForKey(KEY_TODAY_DETAILS)
+			let showTodayDetails = config.bool(forKey:KEY_TODAY_DETAILS)
 			if showTodayDetails {
 				mWeatherSource?.ItemOther.options.insert(WeatherOption.WEATHER_DETAIL_FORECAST)
 			}
-			let locationNumber = config.integerForKey(KEY_LOCATION)
+            let locationNumber = config.integer(forKey:KEY_LOCATION)
 			let locationID = LocationID(rawValue: locationNumber)!
 			
 			let setLabelText: (String)->Void = {(text) in
@@ -262,7 +262,7 @@ class ViewController: UIViewController {
 				}
 			}
 			
-			mWeatherSource?.query(locationID,
+            mWeatherSource?.query(location:locationID,
 				AqiCompletionHandler: {(aqi) in
 					var report = ""
 					if let weather = self.mLblWeatherInfo?.text {
@@ -286,7 +286,7 @@ class ViewController: UIViewController {
 			mLblWeatherInfo = nil
 			mWeatherSource = nil
 			let title = NSLocalizedString("View Weather", comment: "request weather info")
-			mWeatherButton.setTitle(title, forState: .Normal)
+			mWeatherButton.setTitle(title, for: .normal)
 		}
 	}
 	
@@ -308,8 +308,8 @@ class ViewController: UIViewController {
 		*      }
 		*   }
 		*/
-		let url = NSURL(string: "http://\(mBoxIPAddress):7766/remote?key=\(code.rawValue)")
-		let task = mURLSession.dataTaskWithURL(url!) {(data, response, error) in
+		let url = URL(string: "http://\(mBoxIPAddress):7766/remote?key=\(code.rawValue)")
+		let task = mURLSession.dataTask(with:url!) {(data, response, error) in
 			if error == nil {
 				return
 			}
@@ -324,18 +324,18 @@ class ViewController: UIViewController {
 				Note: completion handler runs in sub-thread!
 				So we need dispatch Alert Message Box to main thread.
 			*/
-			dispatch_async(dispatch_get_main_queue(), {[weak self]() -> Void in
-				let strTitle = NSLocalizedString("Set-top Box Remote", comment: "app full name")
-				let alert = UIAlertController(title: strTitle,
-					message: error!.localizedDescription,
-					preferredStyle:.Alert)
-				let strOk = NSLocalizedString("OK", comment: "OK")
-				alert.addAction(UIAlertAction(title: strOk, style: .Default, handler: nil))
-				self!.presentViewController(alert, animated: true, completion:nil)
-				
-				// in the meantime make the iPhone vibrate
-				AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
-			})
+            DispatchQueue.main.async {
+                let strTitle = NSLocalizedString("Set-top Box Remote", comment: "app full name")
+                let alert = UIAlertController(title: strTitle,
+                    message: error!.localizedDescription,
+                    preferredStyle:.alert)
+                let strOk = NSLocalizedString("OK", comment: "OK")
+                alert.addAction(UIAlertAction(title: strOk, style: .default, handler: nil))
+                self.present(alert, animated: true, completion:nil)
+                
+                // in the meantime make the iPhone vibrate
+                AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
+            }
 		}
 		task.resume()
 	}
@@ -343,19 +343,19 @@ class ViewController: UIViewController {
 	//! monitor device's network traffic path
 	func startMonitorNetwork() {
 		if mReachabilityPtr != nil {
-			let voidPtr = UnsafeMutablePointer<Void>(bridge(self))
+            let voidPtr = UnsafeMutableRawPointer(mutating:bridge(obj:self))
 			var context = SCNetworkReachabilityContext(version: 0,			// fixed value
-			                                           info: voidPtr,	// user-specified data
+			                                           info: voidPtr,	    // user-specified data
 			                                           retain: nil,			// These 3 callbacks
 			                                           release: nil,		// aren't necessary
 			                                           copyDescription: nil)// for me.
 			if SCNetworkReachabilitySetCallback(mReachabilityPtr!,
-			                                    ReachabilityCallback,	// callback when reachability changes
+                                                ReachabilityCallback,	// callback when reachability changes
 			                                    &context)
 			{
 				SCNetworkReachabilityScheduleWithRunLoop(mReachabilityPtr!,
 				                                         CFRunLoopGetCurrent(),
-				                                         kCFRunLoopDefaultMode);
+                                                         CFRunLoopMode.defaultMode.rawValue);
 			}
 		}
 	}
@@ -365,13 +365,13 @@ class ViewController: UIViewController {
 		if mReachabilityPtr != nil {
 			SCNetworkReachabilityUnscheduleFromRunLoop(mReachabilityPtr!,
 			                                           CFRunLoopGetCurrent(),
-			                                           kCFRunLoopDefaultMode);
+                                                       CFRunLoopMode.defaultMode.rawValue);
 		}
 	}
 	
 	func parseReachabilityFlags(flags: SCNetworkReachabilityFlags) {
-		if flags.contains(.Reachable) {
-			mNetworkStatus = flags.contains(.IsWWAN) ? .NETWORK_THRU_WWAN : .NETWORK_THRU_WIFI
+		if flags.contains(.reachable) {
+			mNetworkStatus = flags.contains(.isWWAN) ? .NETWORK_THRU_WWAN : .NETWORK_THRU_WIFI
 		} else {
 			mNetworkStatus = .NETWORK_NOT_REACHABLE;
 		}
@@ -380,7 +380,7 @@ class ViewController: UIViewController {
 	//! synchronous check network status
 	func getCurrentNetworkPath() {
 		var zeroAddr = sockaddr()
-		zeroAddr.sa_len = __uint8_t(sizeof(sockaddr))
+        zeroAddr.sa_len = UInt8(MemoryLayout<sockaddr>.size)
 		zeroAddr.sa_family = sa_family_t(AF_INET)
 		
 		if mReachabilityPtr == nil {
@@ -389,7 +389,7 @@ class ViewController: UIViewController {
 		
 		var flags = SCNetworkReachabilityFlags();
 		SCNetworkReachabilityGetFlags(mReachabilityPtr!, &flags);
-		parseReachabilityFlags(flags)
+        parseReachabilityFlags(flags:flags)
 	}
 	
 	//! User Settings in "iPhone Settings" page
@@ -412,23 +412,23 @@ class ViewController: UIViewController {
 	// some change.
 	//
 	func loadUserConfig() {
-		let config = NSUserDefaults.standardUserDefaults()
+		let config = UserDefaults.standard
 		
 		//! [1] Box IP address
-		let ipAddr = config.stringForKey(KEY_BOX_IP_ADDRESS)
+        let ipAddr = config.string(forKey:KEY_BOX_IP_ADDRESS)
 		if ipAddr != nil {
-			if isValidIPv4Address(ipAddr!) && ipAddr != BoxIPAddress {
+            if isValidIPv4Address(addr:ipAddr!) && ipAddr != BoxIPAddress {
 				BoxIPAddress = ipAddr!
 			}
 		}
 		
 		//! [2] Is double-tap / single-tap effective
-		let isDoubleTap = config.boolForKey(KEY_DOUBLE_TAP_OK)
+		let isDoubleTap = config.bool(forKey:KEY_DOUBLE_TAP_OK)
 		let owned = self.view.gestureRecognizers
 		let installed = (owned == nil ? false : owned!.contains(mTapGesture))
 		if isDoubleTap != mIsDoubleTapOK || !installed {
 			mIsDoubleTapOK = isDoubleTap
-			mTapGesture.removeTarget(self, action: #selector(handleTap(_:)))
+            mTapGesture.removeTarget(self, action: #selector(handleTap))
 			mTapGesture.addTarget(self, action: #selector(handleTap(_:)))
 			mTapGesture.numberOfTapsRequired = (isDoubleTap ? 2 : 1)
 		}
@@ -437,19 +437,19 @@ class ViewController: UIViewController {
 		}
 		
 		//! You can suppress all network error message if you have faith in your Wifi.
-		mIgnoreNetError = config.boolForKey(KEY_DISABLE_ERR_MSG)
+		mIgnoreNetError = config.bool(forKey:KEY_DISABLE_ERR_MSG)
 	}
 	
-	func handleTap(gesture: UITapGestureRecognizer) {
+	@objc func handleTap(_ gesture: UITapGestureRecognizer) {
 		// disble tap when viewing weather info
 		guard mScrollView == nil else {
 			return
 		}
 		
-		let pt = gesture.locationInView(self.view)
+        let pt = gesture.location(in:self.view)
 		if (pt.y > mGestureRectTop)
 		{
-			performAction(.ACTION_OK);
+			performAction(code:.ACTION_OK);
 		}
 	}
 	
@@ -463,7 +463,7 @@ class ViewController: UIViewController {
 				positions.append(i.frame.maxY)
 			}
 		}
-		mGestureRectTop = positions.maxElement()!
+        mGestureRectTop = positions.max()!
 	}
 	
 	func setupGestures() {
@@ -478,29 +478,29 @@ class ViewController: UIViewController {
 	
 	//! control volume
 	// FIXME: how to debug this "pinch" behavior in simulator?
-	func handlePinch(gesture: UIPinchGestureRecognizer) {
+	@objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
 		// disble pinch when viewing weather info
 		if mScrollView != nil {
 			return
 		}
 		
-		if gesture.state == .Ended {
-			performAction(gesture.scale > 1.0 ? .ACTION_VOL_UP : .ACTION_VOL_DOWN)
+		if gesture.state == .ended {
+			performAction(code:gesture.scale > 1.0 ? .ACTION_VOL_UP : .ACTION_VOL_DOWN)
 		}
 	}
 	
 	//! process pan gestures of UP, DOWN, LEFT and RIGHT.
-	func handlePan(gesture: UIPanGestureRecognizer) {
+	@objc func handlePan(_ gesture: UIPanGestureRecognizer) {
 		// disble pan when viewing weather info
 		guard mScrollView == nil else {
 			return
 		}
 		
-		if gesture.state == .Began {
+		if gesture.state == .began {
 			mCurrDirection = .DIRECTION_INVALID
 			mPrevDirection = .DIRECTION_INVALID
-		} else if gesture.state == .Changed {
-			let pt = gesture.translationInView(self.view)
+		} else if gesture.state == .changed {
+            let pt = gesture.translation(in:self.view)
 			let xabs = abs(pt.x);
 			let yabs = abs(pt.y);
 			if (xabs > yabs)
@@ -515,7 +515,7 @@ class ViewController: UIViewController {
 			if (mPrevDirection != mCurrDirection)
 			{
 				//! Firstly, respond to user's input
-				performAction(mCurrDirection.toActionCode())
+				performAction(code:mCurrDirection.toActionCode())
 			
 				/*
 				Secondly, begin to monitor user's long press.
@@ -523,21 +523,21 @@ class ViewController: UIViewController {
 				If user releases finger within 0.5 second, below resetPanTimer will invalidate timer.
 				*/
 				resetPanTimer()
-				mRepeatDelayer = NSTimer.scheduledTimerWithTimeInterval(0.5,
-																		target: self,
-																		selector: #selector(startRepeater),
-																		userInfo: nil,
-																		repeats: false) // no repeat: run-loop won't keep reference
+                mRepeatDelayer = Timer.scheduledTimer(timeInterval:0.5,
+                                                      target:self,
+                                                      selector: #selector(startRepeater),
+                                                      userInfo: nil,
+                                                      repeats: false) // no repeat: run-loop won't keep reference
 				mPrevDirection = mCurrDirection;
 			}
-		} else if gesture.state == .Ended {
+		} else if gesture.state == .ended {
 			mCurrDirection = .DIRECTION_INVALID
 			mPrevDirection = .DIRECTION_INVALID
 			resetPanTimer()
 		}
 	}
 	
-	//! release NSTimer resources, because they don't support re-schedule operation. So we have to
+	//! release Timer resources, because they don't support re-schedule operation. So we have to
 	//! make new ones when we need them again.
 	func resetPanTimer() {
 		mRepeatDelayer?.invalidate()
@@ -547,19 +547,19 @@ class ViewController: UIViewController {
 	}
 	
 	//! long-press will generate continuous Direction commands.
-	func startRepeater() {
+	@objc func startRepeater() {
 		mRepeatDelayer = nil;	// no repeat: run-loop won't keep reference. so no need to invalidate it
-		mActionRepeater = NSTimer.scheduledTimerWithTimeInterval(0.2,
-		                                                         target:self,
-		                                                         selector:#selector(handleLongPress(_:)),
-		                                                         userInfo:nil,
-		                                                         repeats:true)
+        mActionRepeater = Timer.scheduledTimer(timeInterval:0.2,
+                                               target:self,
+                                               selector:#selector(handleLongPress(_:)),
+                                               userInfo:nil,
+                                               repeats:true)
 	}
 	
-	func handleLongPress(timer: NSTimer) {
+	@objc func handleLongPress(_ timer: Timer) {
 		let code = mCurrDirection.toActionCode()
 		if code != .ACTION_NULL {
-			performAction(code)
+			performAction(code:code)
 		}
 	}
 	
@@ -592,16 +592,16 @@ class ViewController: UIViewController {
 		
 		if let label = mLblWeatherInfo {
 			//label.font = UIFont.systemFontOfSize(14)
-			label.textAlignment = .Left
-			label.lineBreakMode = .ByWordWrapping
+			label.textAlignment = .left
+			label.lineBreakMode = .byWordWrapping
 			label.numberOfLines = 0
 			//label.backgroundColor = UIColor.blueColor() // [debug] make it standing out
 			label.translatesAutoresizingMaskIntoConstraints = false
-			NSLayoutConstraint.activateConstraints([
-				label.widthAnchor.constraintEqualToConstant(mScrollView!.frame.size.width),
-				/*label.heightAnchor.constraintEqualToConstant(mScrollView!.frame.size.height),*/// label height must fit to content
-				label.centerXAnchor.constraintEqualToAnchor(mScrollView!.centerXAnchor),
-				label.topAnchor.constraintEqualToAnchor(mScrollView!.topAnchor)
+			NSLayoutConstraint.activate([
+				label.widthAnchor.constraint(equalToConstant:mScrollView!.frame.size.width),
+				/*label.heightAnchor.constraint(equalToConstant:mScrollView!.frame.size.height),*/// label height must fit to content
+                label.centerXAnchor.constraint(equalTo: mScrollView!.centerXAnchor),
+				label.topAnchor.constraint(equalTo:mScrollView!.topAnchor)
 			])
 		}
 		mLblWeatherInfo?.translatesAutoresizingMaskIntoConstraints = false

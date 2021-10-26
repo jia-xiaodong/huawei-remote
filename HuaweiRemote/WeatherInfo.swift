@@ -49,26 +49,26 @@ class AirQualityIndex: WeatherServiceProvider
 	*/
 	func launchQuery(location:LocationID, completionHandler:((String?)->Void)?) {
 		mResult = ""
-		let positionId = AirQualityIndex.StringFromId(location)
-		let url = NSURL(string: "https://api.waqi.info/api/feed/@\(positionId)/now.json")
-		let session = NSURLSession.sharedSession()
-		let task = session.dataTaskWithURL(url!) {(data, response, error) in
+        let positionId = AirQualityIndex.StringFromId(location:location)
+		let url = URL(string: "https://api.waqi.info/api/feed/@\(positionId)/now.json")
+		let session = URLSession.shared
+        let task = session.dataTask(with:url!) {(data, response, error) in
 			var errorMessage: String? = nil
 			if let error = error {
 				errorMessage = error.localizedDescription
-			} else if let httpResponse = response as? NSHTTPURLResponse { // "as?" trys to downcast and return nil if fails.
+			} else if let httpResponse = response as? HTTPURLResponse { // "as?" trys to downcast and return nil if fails.
 				if httpResponse.statusCode != 200 {
-					errorMessage = NSHTTPURLResponse.localizedStringForStatusCode(httpResponse.statusCode)
+					errorMessage = HTTPURLResponse.localizedString(forStatusCode:httpResponse.statusCode)
 				} else if let data = data {
-					self.parseResponse(data)
+                    self.parseResponse(response:data)
 				}
 			}
 			
 			// user callback may refresh UI, so put it to main thread
 			if let handler = completionHandler {
-				dispatch_async(dispatch_get_main_queue()) {() -> Void in
-					handler(errorMessage)
-				}
+                DispatchQueue.main.async {
+                    handler(errorMessage)
+                }
 			}
 		}
 		task.resume()
@@ -91,46 +91,47 @@ class AirQualityIndex: WeatherServiceProvider
 		}
 	}
 	
-	private func parseResponse(response: NSData) -> Void
+	private func parseResponse(response: Data) -> Void
 	{
 		do {
-			let info = try NSJSONSerialization.JSONObjectWithData(response, options: .MutableLeaves)
-			guard var dict = info.objectForKey("rxs") else {
+            let info = try JSONSerialization.jsonObject(with:response, options: .mutableLeaves) as! [String: Any]
+            guard var dict = info["rxs"] as? [String: Any] else {
 				return
 			}
-			guard dict.objectForKey("ver") as! String == "1" else {
+			guard dict["ver"] as! String == "1" else {
 				return
 			}
-			guard dict.objectForKey("status") as! String == "ok" else {
+			guard dict["status"] as! String == "ok" else {
 				return
 			}
-			let array = dict.objectForKey("obs") as! NSArray
+			let array = dict["obs"] as! NSArray
 			if array.count < 1 {
 				return
 			}
-			dict = array[0] as! NSDictionary
-			guard dict.objectForKey("status") as! String == "ok" else {
+			dict = array[0] as! [String: Any]
+			guard dict["status"] as! String == "ok" else {
 				return
 			}
-			dict = dict.objectForKey("msg") as! NSDictionary
-			var aqi = dict.objectForKey("aqi") as! NSNumber?
+			dict = dict["msg"] as! [String: Any]
+			var aqi = dict["aqi"] as! Int?
 			if aqi == nil {
-				aqi = NSNumber(int: 0)
+				aqi = Int(0)
 			}
-			guard let site = dict.objectForKey("city")?.objectForKey("name") else {
+            let cityInfo = dict["city"] as? [String: Any]
+			guard let site = cityInfo?["name"] else {
 				return
 			}
-			var dominentPollution = dict.objectForKey("dominentpol") as! String	// PM10? PM2.5?
-			if dominentPollution.caseInsensitiveCompare("pm25") == .OrderedSame {
+			var dominentPollution = dict["dominentpol"] as! String	// PM10? PM2.5?
+			if dominentPollution.caseInsensitiveCompare("pm25") == .orderedSame {
 				dominentPollution = "pm2.5"
 			}
-			let time = dict.objectForKey("time") as! NSDictionary
-			let timePoint = time.objectForKey("s") as! String
-			let timeZone = time.objectForKey("tz") as! String
+            let time = dict["time"] as! [String: Any]
+			let timePoint = time["s"] as! String
+			let timeZone = time["tz"] as! String
 			let timeInfo = "\(timePoint), \(timeZone)"
 			let strSite = NSLocalizedString("Site", comment: "geographical site")
 			let strDominentPollution = NSLocalizedString("Dominent Pollution", comment: "main pollution source")
-			mResult = "\(timeInfo)\n\(strSite): \(site)\nAQI: \(aqi!.intValue)\n\(strDominentPollution): \(dominentPollution)\n<from aqicn.org>\n"
+			mResult = "\(timeInfo)\n\(strSite): \(site)\nAQI: \(aqi)\n\(strDominentPollution): \(dominentPollution)\n<from aqicn.org>\n"
 		}
 		catch {  // TODO: what exception will JSON throws?
 			NSLog("[AirQualityIndex] Error: wrong JSON data")
@@ -138,7 +139,7 @@ class AirQualityIndex: WeatherServiceProvider
 	}
 }
 
-struct WeatherOption: OptionSetType {
+struct WeatherOption: OptionSet {
 	var rawValue: UInt8
 	
 	static let WEATHER_NOW				= WeatherOption(rawValue: 1) // today's weather
@@ -174,36 +175,36 @@ class HeWeatherInfoNode
 	
 	init(withJson data: NSDictionary) {
 		//date
-		if let date = data.objectForKey("date") {
+		if let date = data.object(forKey:"date") {
 			self.date = date as! String
 		} else {
-			let now = NSDate()
-			let formatter = NSDateFormatter() // default: current locale
-			formatter.dateStyle = .MediumStyle
-			formatter.timeStyle = .MediumStyle
+			let now = Date()
+			let formatter = DateFormatter() // default: current locale
+			formatter.dateStyle = .medium
+			formatter.timeStyle = .medium
 			// FIXME: some parts are not working
 			//formatter.setLocalizedDateFormatFromTemplate("yyyy-MM-dd HH:mm")
-			self.date = formatter.stringFromDate(now)
+            self.date = formatter.string(from:now)
 		}
 		
 		// astronomy (the periods of sun and moon)
-		if let dict = data.objectForKey("astro") as? NSDictionary {
-			let sunrise = dict.objectForKey("sr") as? String
-			let sunset = dict.objectForKey("ss") as? String
-			let moonrise = dict.objectForKey("mr") as? String
-			let moonset = dict.objectForKey("ms") as? String
+		if let dict = data.object(forKey:"astro") as? NSDictionary {
+			let sunrise = dict["sr"] as? String
+			let sunset = dict["ss"] as? String
+			let moonrise = dict["mr"] as? String
+			let moonset = dict["ms"] as? String
 			if sunrise != nil && sunset != nil && moonrise != nil && moonset != nil {
 				self.astro = "日出日落: \(sunrise!) - \(sunset!)\n月出月落: \(moonrise!) - \(moonset!)"
 			}
 		}
 		
 		// sky condition: shiny, cloudy, rainy, ...
-		if let dict = data.objectForKey("cond") {
-			if let value = dict.objectForKey("txt") {
-				self.condition = value as! String
+		if let dict = data.object(forKey:"cond") as? NSDictionary {
+			if let value = dict["txt"] as? String {
+				self.condition = value
 			} else {
-				let day = dict.objectForKey("txt_d") as? String
-				let night = dict.objectForKey("txt_n") as? String
+				let day = dict["txt_d"] as? String
+				let night = dict["txt_n"] as? String
 				if day != nil && night != nil {
 					self.condition = "白天\(day!),夜间\(night!)"
 				}
@@ -211,61 +212,59 @@ class HeWeatherInfoNode
 		}
 		
 		// temperature
-		if var value = data.objectForKey("tmp") {
+		if var value = data.object(forKey:"tmp") {
 			if value is NSDictionary {
 				let dict = value as! NSDictionary
-				let min = dict.objectForKey("min") as? String
-				let max = dict.objectForKey("max") as? String
+				let min = dict["min"] as? String
+				let max = dict["max"] as? String
 				value = "\(min!)~\(max!)"
 			}
 			var desc = "温度: \(value as! String)"
-			if let value = data.objectForKey("fl") {
+			if let value = data.object(forKey:"fl") {
 				desc += "; 体感温度: \(value as! String)"
 			}
 			self.temperature = desc
 		}
 		
 		// humidity
-		if let value = data.objectForKey("hum") {
+		if let value = data.object(forKey:"hum") {
 			self.humidity = "相对湿度: \(value as! String)%"
 		}
 		
 		// precipitation probability
-		if let value = data.objectForKey("pop") {
-			let p = value.floatValue
-			if p > 0 {
-				self.probability = "降水概率: \(p)%"
+		if let value = data.object(forKey:"pop") as? Float {
+			if value > 0 {
+				self.probability = "降水概率: \(value)%"
 			}
 		}
 		
 		// precipitation amount
-		if let value = data.objectForKey("pcpn") {
-			let p = value.floatValue
-			if p > 0 {
-				self.precipitation = "降水量: \(p)mm"
+		if let value = data.object(forKey:"pcpn") as? Int {
+			if value > 0 {
+				self.precipitation = "降水量: \(value)mm"
 			}
 		}
 		
 		// atmospheric pressure
-		if let value = data.objectForKey("pres") {
+		if let value = data.object(forKey:"pres") {
 			self.pressure = "大气压: \(value)mmHg"
 		}
 		
 		// ultra-violet index
-		if let value = data.objectForKey("uv") {
+		if let value = data.object(forKey:"uv") {
 			self.uv = "紫外线指数: \(value)"
 		}
 		
 		// visibility
-		if let value = data.objectForKey("vis") {
+		if let value = data.object(forKey:"vis") {
 			self.visibility = "能见度: \(value)km"
 		}
 		
 		// wind
-		if let dict = data.objectForKey("wind") {
-			let dir = dict.objectForKey("dir")
-			let lvl = dict.objectForKey("sc")
-			let spd = dict.objectForKey("spd")
+		if let dict = data.object(forKey:"wind") as? NSDictionary {
+			let dir = dict["dir"]
+			let lvl = dict["sc"]
+			let spd = dict["spd"]
 			self.wind = "\(dir as! String)\(lvl as! String)级, \(spd as! String)km/h"
 		}
 	}
@@ -273,34 +272,34 @@ class HeWeatherInfoNode
 	var description: String {
 		var desc = "---------------------\n\(date)"
 		if !condition.isEmpty {
-			desc.appendContentsOf("\n\(condition)")
+            desc.append(contentsOf:"\n\(condition)")
 		}
 		if !astro.isEmpty {
-			desc.appendContentsOf("\n\(astro)")
+			desc.append(contentsOf:"\n\(astro)")
 		}
 		if !temperature.isEmpty {
-			desc.appendContentsOf("\n\(temperature)")
+			desc.append(contentsOf:"\n\(temperature)")
 		}
 		if !humidity.isEmpty {
-			desc.appendContentsOf("\n\(humidity)")
+			desc.append(contentsOf:"\n\(humidity)")
 		}
 		if !probability.isEmpty {
-			desc.appendContentsOf("\n\(probability)")
+			desc.append(contentsOf:"\n\(probability)")
 		}
 		if !precipitation.isEmpty {
-			desc.appendContentsOf("\n\(precipitation)")
+			desc.append(contentsOf:"\n\(precipitation)")
 		}
 		if !pressure.isEmpty {
-			desc.appendContentsOf("\n\(pressure)")
+			desc.append(contentsOf:"\n\(pressure)")
 		}
 		if !uv.isEmpty {
-			desc.appendContentsOf("\n\(uv)")
+			desc.append(contentsOf:"\n\(uv)")
 		}
 		if !visibility.isEmpty {
-			desc.appendContentsOf("\n\(visibility)")
+			desc.append(contentsOf:"\n\(visibility)")
 		}
 		if !wind.isEmpty {
-			desc.appendContentsOf("\n\(wind)")
+			desc.append(contentsOf:"\n\(wind)")
 		}
 		return desc
 	}
@@ -337,9 +336,9 @@ class HeWeather: DetailedWeatherInfo
 	}
 	
 	//! The nearest observated site
-	static func StringFromId(loc:LocationID) -> String
+	static func StringFromId(location:LocationID) -> String
 	{
-		switch (loc) {
+		switch (location) {
 		case .Beijing_GuoFengMeiLun:
 			return "CN101010600"	// Tongzhou, Beijing (北京通州)
 		case .Beijing_ZhongGuanCun:
@@ -349,7 +348,7 @@ class HeWeather: DetailedWeatherInfo
 		case .QinHuangDao_LuLong:
 			return "CN101091105"	// Lulong County, Qinhuangdao City (卢龙县)
 		default:
-			NSLog("[HeWeather] Error: unidentified location (%d)", loc.rawValue)
+			NSLog("[HeWeather] Error: unidentified location (%d)", location.rawValue)
 			return "CN101010100"	// beijing (北京市)
 		}
 	}
@@ -360,31 +359,31 @@ class HeWeather: DetailedWeatherInfo
 		mForecast = nil
 		mDetailedForecast = nil
 		
-		let site = HeWeather.StringFromId(location)
-		let url = NSURL(string: "https://free-api.heweather.com/v5/weather?key=2dae4ca04d074a1abde0c113c3292ae1&city=\(site)")
-		let task = NSURLSession.sharedSession().dataTaskWithURL(url!) {(data, response, error) in
+        let site = HeWeather.StringFromId(location:location)
+		let url = URL(string: "https://free-api.heweather.com/v5/weather?key=2dae4ca04d074a1abde0c113c3292ae1&city=\(site)")
+        let task = URLSession.shared.dataTask(with:url!) {data, response, error in
 			var errorMessage: String? = nil
 			if let error = error {
 				errorMessage = "\(error.localizedDescription)\n"
-			} else if let response = response as? NSHTTPURLResponse { // if downcast fails, "as?" returns nil.
+			} else if let response = response as? HTTPURLResponse { // if downcast fails, "as?" returns nil.
 				if response.statusCode != 200 {
-					errorMessage = "\(NSHTTPURLResponse.localizedStringForStatusCode(response.statusCode))\n"
+					errorMessage = "\(HTTPURLResponse.localizedString(forStatusCode:response.statusCode))\n"
 				} else if let data = data {
-					self.parseResponse(data)
+                    self.parseResponse(response:data)
 				}
 			}
 			
 			// user callback may refresh UI, so put it to main thread
 			if let handler = completionHandler {
-				dispatch_async(dispatch_get_main_queue()) {() -> Void in
-					handler(errorMessage)
-				}
+                DispatchQueue.main.async {
+                    handler(errorMessage)
+                }
 			}
-		}
+        }
 		task.resume()
 	}
 
-	func parseResponse(response:NSData) {
+	func parseResponse(response:Data) {
 		do {
 			// [debug] can't see full values of a JSON object in Xcode debugger.
 			/*
@@ -395,8 +394,8 @@ class HeWeather: DetailedWeatherInfo
 				debugPrint(jsonStr)
 			}
 			*/
-			let info = try NSJSONSerialization.JSONObjectWithData(response, options: .MutableLeaves)
-			guard let array = info.objectForKey("HeWeather5") else {
+            let info = try JSONSerialization.jsonObject(with:response, options: .mutableLeaves) as? [String: Any]
+			guard let array = info?["HeWeather5"] as? NSArray else {
 				return
 			}
 			guard array.count > 0 else {
@@ -406,24 +405,24 @@ class HeWeather: DetailedWeatherInfo
 			guard node["status"] as? String == "ok" else {
 				return
 			}
-			if let aqi = node["aqi"] {
-				if let city = aqi["city"] {
-					parseAqi(city as! NSDictionary)
+            if let aqi = node["aqi"] as? [String: Any]{
+				if let city = aqi["city"] as? NSDictionary {
+                    parseAqi(info:city)
 				}
 			}
-			if let now = node["now"] {
-				parseNowInfo(now as! NSDictionary)
+			if let now = node["now"] as? NSDictionary {
+                parseNowInfo(now:now)
 			}
 			if self.options.contains(.WEATHER_FORECAST) {
 				let forecast = node["daily_forecast"] as? NSArray
 				if let forecast = forecast {
-					parseDailyForecast(forecast)
+                    parseDailyForecast(forecast:forecast)
 				}
 			}
 			if self.options.contains(.WEATHER_DETAIL_FORECAST) {
 				let forecast = node["hourly_forecast"] as? NSArray
 				if let forecast = forecast {
-					parseDetailedForecast(forecast)
+                    parseDetailedForecast(forecast:forecast)
 				}
 			}
 		} catch {
@@ -432,10 +431,10 @@ class HeWeather: DetailedWeatherInfo
 	}
 	
 	func parseAqi(info:NSDictionary) {
-		let aqi = info.objectForKey("aqi");
-		let pm10 = info.objectForKey("pm10");
-		let pm25 = info.objectForKey("pm25");
-		let qly = info.objectForKey("qlty");
+		let aqi = info.object(forKey:"aqi");
+		let pm10 = info.object(forKey:"pm10");
+		let pm25 = info.object(forKey:"pm25");
+		let qly = info.object(forKey:"qlty");
 		mAqi = "AQI:\(aqi as! String) (PM10:\(pm10 as! String), PM2.5:\(pm25 as! String)) \(qly as! String)"
 	}
 	
@@ -445,18 +444,18 @@ class HeWeather: DetailedWeatherInfo
 	
 	func parseDailyForecast(forecast:NSArray) {
 		var array = [HeWeatherInfoNode]()
-		forecast.enumerateObjectsUsingBlock() {(dict, index, stop) -> Void in
+		forecast.enumerateObjects() {(dict, index, stop) -> Void in
 			let node = HeWeatherInfoNode(withJson: dict as! NSDictionary)
-			array.insert(node, atIndex: index)
+			array.insert(node, at: index)
 		}
 		mForecast = array
 	}
 	
 	func parseDetailedForecast(forecast:NSArray) {
 		var array = [HeWeatherInfoNode]()
-		forecast.enumerateObjectsUsingBlock() {(dict, index, stop) -> Void in
+		forecast.enumerateObjects() {(dict, index, stop) -> Void in
 			let node = HeWeatherInfoNode(withJson: dict as! NSDictionary)
-			array.insert(node, atIndex: index)
+            array.insert(node, at: index)
 		}
 		mDetailedForecast = array
 	}
@@ -475,19 +474,19 @@ class WeatherFullReport {
 	}
 	
 	func query(location:LocationID, AqiCompletionHandler:((String)->Void)?, WeatherCompletionHandler:((String)->Void)?) {
-		mAQI.launchQuery(location) {(errorMessage) -> Void in
+        mAQI.launchQuery(location:location) {(errorMessage) -> Void in
 			if let handler = AqiCompletionHandler {
-				dispatch_async(dispatch_get_main_queue()) {()->Void in
-					handler(errorMessage == nil ? self.ItemAir.result : errorMessage!)
-				}
+                DispatchQueue.main.async {
+                    handler(errorMessage == nil ? self.ItemAir.result : errorMessage!)
+                }
 			}
 		}
 
-		mWeatherProvider.launchQuery(location) {(errorMessage) -> Void in
+        mWeatherProvider.launchQuery(location:location) {(errorMessage) -> Void in
 			if let handler = WeatherCompletionHandler {
-				dispatch_async(dispatch_get_main_queue()) {()->Void in
-					handler(errorMessage == nil ? self.ItemOther.result : errorMessage!)
-				}
+                DispatchQueue.main.async {
+                    handler(errorMessage == nil ? self.ItemOther.result : errorMessage!)
+                }
 			}
 		}
 	}
