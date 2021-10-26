@@ -113,7 +113,7 @@ class AirQualityIndex: WeatherServiceProvider
 				return
 			}
 			dict = dict["msg"] as! [String: Any]
-			var aqi = dict["aqi"] as! Int?
+			var aqi = dict["aqi"] as? Int
 			if aqi == nil {
 				aqi = Int(0)
 			}
@@ -131,7 +131,7 @@ class AirQualityIndex: WeatherServiceProvider
 			let timeInfo = "\(timePoint), \(timeZone)"
 			let strSite = NSLocalizedString("Site", comment: "geographical site")
 			let strDominentPollution = NSLocalizedString("Dominent Pollution", comment: "main pollution source")
-			mResult = "\(timeInfo)\n\(strSite): \(site)\nAQI: \(aqi)\n\(strDominentPollution): \(dominentPollution)\n<from aqicn.org>\n"
+            mResult = "\(timeInfo)\n\(strSite): \(site)\nAQI: \(aqi)\n\(strDominentPollution): \(dominentPollution)\n<from aqicn.org>\n"
 		}
 		catch {  // TODO: what exception will JSON throws?
 			NSLog("[AirQualityIndex] Error: wrong JSON data")
